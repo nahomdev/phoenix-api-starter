@@ -1,6 +1,9 @@
 import { createApp } from './index';
 import * as http from 'http';
 import env from './utils/env';
+import { useLogger} from './logger';
+
+const logger = useLogger();
 
 export async function createServer(): Promise<http.Server>{
 
@@ -14,6 +17,6 @@ export async function startServer(): Promise<void>{
 
     const port = env['PORT'] || 9001;
     (await server).listen(port,()=>{
-        console.log(`server is up and running on port ${port}`);
+        logger.info(`server is up and running on port ${port}`);
     })
 }
