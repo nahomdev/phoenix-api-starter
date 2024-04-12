@@ -1,0 +1,24 @@
+{
+  "name": "phoenix-cms",
+  "version": "1.0.0",
+  "description": "headless cms for z phoenix",
+  "main": "index.js",
+  "repository": "https://github.com/nahomdev/phoenix-api-starter.git",
+  "author": "nahom balcha",
+  "license": "MIT",
+  "scripts": {
+    "watch": "tsc -W",
+    "dev": "nodemon dist/index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.12.7",
+    "nodemon": "^3.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
