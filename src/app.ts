@@ -3,6 +3,8 @@ import qs from 'qs';
 import helmet from 'helmet';
 import cors from './middleware/cors';
 import cookieParser from 'cookie-parser';
+import { createExpressLogger } from './logger';
+ 
 
 export default async function createApp(): Promise<express.Application>{
     const app = express();
@@ -17,7 +19,15 @@ export default async function createApp(): Promise<express.Application>{
          res.setHeader('x-powered-by','phoenix');
          next();
     })
+    app.use(createExpressLogger());
 
+    app.get('/', (_req, res,_next)=>{
+        
+        res.status(200).json({
+            status: "successful",
+            message: "welcome to phoenix headless cms"
+        })
+    })
 
     return app;
 }
