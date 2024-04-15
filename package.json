@@ -8,7 +8,9 @@
   "license": "MIT",
   "scripts": {
     "watch": "tsc -W",
-    "dev": "nodemon dist/start.js"
+   "dev": "docker-compose -f docker-compose.yml build --build-arg NODE_ENV=development && docker-compose -f docker-compose.yml up -d && npm run all:logs",
+   "start": "docker build --target production -t phoenix-cms . && docker run -d -p ${PORT}:${PORT} phoenix-cms",
+   "all:logs": "docker-compose logs -f --tail 10"
   },
   "dependencies": {
     "cookie-parser": "^1.4.6",
