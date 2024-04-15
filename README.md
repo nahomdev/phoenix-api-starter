@@ -1,0 +1,30 @@
+# server variables
+PORT=9000
+
+# cors variables
+CORS_ENABLED=true
+CORS_ORIGIN=http://localhost:3000,
+CORS_METHODS=GET,POST,PUT,PATCH,DELETE
+CORS_ALLOWED_HEADERS=Content-Type,Authorization
+CORS_EXPOSED_HEADERS=
+CORS_CREDENTIALS=false
+
+# logger variables
+LOG_LEVELS=info
+LOG_STYLE=
+
+
+# database variables
+DB_CLIENT=
+DB_VERSION=
+DB_CONNECTION_STRING=
+DB_POOL=
+
+DB_FILENAME=
+DB_HOST=
+DB_PORT=
+DB_DATABASE=
+DB_USER=
+DB_PASSWORD=
+
+DB_PATH=
