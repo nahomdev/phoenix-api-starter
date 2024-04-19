@@ -1,91 +1,84 @@
-import knex, {Knex} from 'knex';
-import env from '../utils/env'; 
-import config  from './dbconfig';
+import knex, { Knex } from 'knex';
+import config from './dbconfig';
 import { useLogger } from '../logger';
-import { promisify } from 'util';
+import env from '../utils/env';
 
+let database: Knex | null = null;
+let databaseVersion: string | null = null;
 
-let database : Knex|null = null;
-let databaseVersion : string | null = null;
-let logger = useLogger();
+const logger = useLogger();
 
-export function getDatabase():Knex{
-    if(database){
-        return database;
-    }
-    
-    let poolConfig:Knex.PoolConfig = {};
-    let dbconfig;
-    let node_env = env['NODE_ENV'] || 'development';
-    if(node_env === 'production'){
-        dbconfig = config.development;
-    }else if(node_env == 'development'){
-        dbconfig = config.production;
-    }
-    
-    const knexConfig: Knex.Config = {
-        client: dbconfig?.client,
-        connection: dbconfig?.connection,
-        log:{
-            warn: (msg) => logger.warn(msg),
-            error: (msg) => logger.error(msg),
-            deprecate: (msg) => logger.info(msg),
-            debug: (msg) => logger.debug(msg)
-        },
-        pool: poolConfig,
-    }
+async function initializeDatabase(): Promise<Knex> {
+  const nodeEnv = env['NODE_ENV'] || 'development';
+  const dbConfig = nodeEnv == 'development'? config.development : config.production;
 
-    if(dbconfig?.client === 'sqlite3'){
-        knexConfig.useNullAsDefault = true;
+  const poolConfig: Knex.PoolConfig = {
+    min: 1,
+    max: 6,
+    afterCreate: (conn: any, done: (err: any, conn: any) => void) => {
+      if (dbConfig.client === 'sqlite3') {
+        conn.run('PRAGMA foreign_keys = ON', done);
+      } else if (dbConfig.client === 'mysql') {
+        conn.query('SELECT @@version;', (err: any, result: any) => {
+          if (!err) {
+            databaseVersion = result[0]['@@version'];
+          }
+          done(err, conn);
+        });
+      } else {
+        done(null, conn);
+      }
+    },
+  };
 
-        poolConfig.afterCreate = async (conn:any, callback: any) =>{
-            logger.trace('Enabling SQLite Foreign keys support...');
-            const run = promisify(conn.run.bind(conn));
-            await run('foreign_keys = ON');
+  const knexConfig: Knex.Config = {
+    client: dbConfig.client,
+    connection: dbConfig.connection,
+    pool: poolConfig,
+    log: {
+      warn: logger.warn,
+      error: logger.error,
+      deprecate: logger.info,
+      debug: logger.debug,
+    },
+  };
 
-            callback(null, conn);
-        }
-    }
-    
-    if(dbconfig?.client === 'mysql'){
-        poolConfig.afterCreate = async (conn:any, callback:any) =>{
-            logger.trace('retrieving db version');
+  if (dbConfig.client === 'sqlite3') {
+    knexConfig.useNullAsDefault = true;
+  }
 
-            const run = promisify( conn.query.bind(conn));
-            const version = await run('SELECT @@version;');
-
-            callback(null, conn);
-        }
-    }
-
-    database = knex.default(knexConfig); 
-    return database;
+  return knex(knexConfig);
 }
 
+export async function getDatabase(): Promise<Knex> {
+  if (!database) {
+    database = await initializeDatabase();
+  }
+  return database;
+}
 
 export function getDatabaseVersion(): string | null {
-    return databaseVersion;
+  return databaseVersion;
 }
 
-export async function hasDatabaseConnection(database?:Knex): Promise<boolean> {
-     database = database ?? getDatabase();
-
-    try{
-        await database.raw('SELECT 1');
-        return true;
-    }catch(error){
-        return false;
-    }   
+export async function hasDatabaseConnection(): Promise<boolean> {
+  try {
+    const db = await getDatabase();
+    await db.raw('SELECT 1');
+    return true;
+  } catch (error) {
+    logger.error("Failed to establish database connection.", error);
+    return false;
+  }
 }
 
-export async function validateDatabaseConnection(database?:Knex): Promise<void> {
-    database = database ?? getDatabase();
-    
-    try{
-        await database.raw('SELECT 1');
-    }catch(error: any){
-        logger.error("Can't connect to the database.");
-        logger.error(error);
-        process.exit(1);
-    }
+export async function validateDatabaseConnection(): Promise<void> {
+  try {
+    const db = await getDatabase();
+    await db.raw('SELECT 1');
+    logger.info('Database connection validated successfully.');
+  } catch (error) {
+    logger.error("Can't connect to the database.", error);
+    process.exit(1);
+  }
 }
